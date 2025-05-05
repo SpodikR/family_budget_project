@@ -1,0 +1,55 @@
+{% extends "budget/base.html" %}
+
+{% block title %}Мої нотатки - Сімейний бюджет{% endblock %}
+
+{% block content %}
+<h1>Мої нотатки</h1>
+{# --- ДОДАНО КНОПКИ ЕКСПОРТУ/ІМПОРТУ --- #}
+<div class="mb-3">
+    <a href="{% url 'notes:note_create' %}" class="btn btn-primary">Створити нову нотатку</a>
+    <a href="{% url 'notes:export_notes' %}" class="btn btn-secondary">Експортувати нотатки (JSON)</a>
+    <a href="{% url 'notes:import_notes' %}" class="btn btn-info">Імпортувати нотатки (JSON)</a>
+</div>
+{# --- КІНЕЦЬ ДОДАНИХ КНОПОК --- #}
+{% if notes %}
+    <div class="list-group">
+        {% for note in notes %}
+        <a href="{{ note.get_absolute_url }}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">{{ note.title }}</h5>
+            <small>{{ note.date|date:"d.m.Y" }}</small>
+            </div>
+            <p class="mb-1">{{ note.content|truncatewords:30 }}</p>
+            <small>Оновлено: {{ note.updated_at|date:"d.m.Y H:i" }}</small>
+             {% if note.photos.exists %} {# Перевірка, чи є фото #}
+                <span class="badge bg-secondary ms-2">{{ note.photos.count }} фото</span>
+             {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+
+    {# Пагінація, якщо є #}
+    {% if is_paginated %}
+        <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Попередня</a></li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Попередня</span></li>
+            {% endif %}
+
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ page_obj.number }} з {{ page_obj.paginator.num_pages }}</span></li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Наступна</a></li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Наступна</span></li>
+            {% endif %}
+        </ul>
+        </nav>
+    {% endif %}
+
+{% else %}
+    <p>У вас ще немає жодної нотатки. <a href="{% url 'notes:note_create' %}">Створити першу?</a></p>
+{% endif %}
+{% endblock %}

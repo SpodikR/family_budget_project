@@ -1,0 +1,34 @@
+# Віртуальне середовище
+venv/
+.venv/
+env/
+.env
+
+# База даних SQLite
+*.sqlite3
+db.sqlite3
+db.sqlite3-journal
+
+# Медіа файли (завантажені користувачем) - зазвичай не версіонують
+media/
+
+# Статичні файли (зібрані collectstatic) - часто не версіонують
+staticfiles/
+static_root/
+
+# Файли Python кешу
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Файли IDE (VS Code, PyCharm)
+.vscode/
+.idea/
+
+# Локальні налаштування (якщо є)
+local_settings.py
+
+# Інше
+*.log
+*.pot
+*.pid

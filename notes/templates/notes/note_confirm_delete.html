@@ -1,0 +1,15 @@
+{% extends "budget/base.html" %}
+
+{% block title %}Підтвердити видалення - Нотатки{% endblock %}
+
+{% block content %}
+<h1>Підтвердити видалення нотатки</h1>
+<p>Ви впевнені, що хочете видалити нотатку "{{ object.title }}" від {{ object.date|date:"d.m.Y" }}?</p>
+<p class="text-danger"><strong>Увага:</strong> Разом з нотаткою будуть видалені всі пов'язані з нею фотографії!</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Так, видалити</button>
+    <a href="{{ object.get_absolute_url }}" class="btn btn-secondary">Ні, скасувати</a>
+</form>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "budget/base.html" %}
+
+{% block title %}{{ note.title }} - Нотатки{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+         <h4 class="mb-0">{{ note.title }}</h4>
+         <span class="text-muted">{{ note.date|date:"d F Y" }}</span>
+    </div>
+    <div class="card-body">
+        <p>{{ note.content|linebreaksbr }}</p> {# linebreaksbr для переносів рядків #}
+
+        {# Відображення фотографій #}
+        {% if note.photos.all %}
+            <hr>
+            <h5>Фотографії:</h5>
+            <div class="notes-photo-gallery">
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                    {% for photo in note.photos.all %}
+                    <div class="col">
+                        <div class="card">
+                            {# Додаємо data-caption до посилання #}
+                        <a href="{{ photo.image.url }}"
+                        data-caption="{{ photo.caption|default:'' }}"
+                        title="Відкрити фото: {{ photo.caption|default:'Фото до нотатки' }}">
+                        <img src="{{ photo.image.url }}" class="card-img-top" alt="{{ photo.caption|default:'Фото до нотатки' }}" style="max-height: 200px; object-fit: cover;">
+                    </a>
+                    {% if photo.caption %}
+                    {# Підпис під фото можна залишити або прибрати, бо він буде в лайтбоксі #}
+                    <div class="card-body py-2 px-3">
+                        <p class="card-text small text-muted">{{ photo.caption }}</p>
+                    </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div> 
+            </div>{# --- КІНЕЦЬ ОБГОРТКИ .notes-photo-gallery --- #}{# --- КІНЕЦЬ ОБГОРТКИ .notes-photo-gallery --- #}
+        {% endif %}
+    </div>
+    <div class="card-footer text-muted d-flex justify-content-between align-items-center">
+       <div>
+            <small>Створено: {{ note.created_at|date:"d.m.Y H:i" }}</small><br>
+            <small>Оновлено: {{ note.updated_at|date:"d.m.Y H:i" }}</small>
+       </div>
+       <div>
+            <a href="{% url 'notes:note_update' note.pk %}" class="btn btn-sm btn-outline-primary">Редагувати</a>
+            <a href="{% url 'notes:note_delete' note.pk %}" class="btn btn-sm btn-outline-danger">Видалити</a>
+            <a href="{% url 'notes:note_list' %}" class="btn btn-sm btn-outline-secondary">До списку</a>
+       </div>
+    </div>
+</div>
+{% endblock %}

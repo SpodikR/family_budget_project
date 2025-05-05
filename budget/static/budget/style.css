@@ -1,0 +1,53 @@
+/* budget/static/budget/style.css */
+html {
+    height: 100%; /* Важливо для роботи min-height: 100% на body */
+}
+body {
+    display: flex;           /* Вмикаємо Flexbox */
+    flex-direction: column;  /* Напрямок - колонка (header, main, footer) */
+    min-height: 100vh;       /* Мінімальна висота body = 100% висоти вьюпорту */
+                             /* Використовуємо vh (viewport height) замість % для надійності */
+    padding-top: 56px;       /* Зберігаємо відступ для фіксованої навігації (висота navbar за замовчуванням)*/
+                             /* Якщо ваша навігація іншої висоти, змініть це значення */
+    background-color: #f0f2f5; /* Приклад: Дуже світло-сіро-блакитний */
+}
+.main-content {
+    flex-grow: 1;            /* Дозволяємо цьому блоку зайняти весь доступний простір */
+                             /* Це "виштовхне" футер вниз */
+}
+
+/* Можна додати легкий фон для основного контейнера,щоб він виділявся на фоні body */
+.main-content-area { /* Додай цей клас до div з flex-grow-1 у base.html */
+background-color: #ffffff; /* Білий фон для контенту */
+padding: 20px 0; /* Додамо трохи повітря зверху/знизу */
+border-radius: 5px; /* Опціонально: заокруглення кутів */
+/* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); */ /* Опціонально: легка тінь */
+ }
+/* --- Кінець стилів для sticky footer --- */
+
+/* Інші ваші стилі */
+.balance-positive { color: green; }
+.balance-negative { color: red; }
+.nav-link.active { font-weight: bold; }
+
+/* Стилі для футера (приклад) */
+.footer {
+    background-color: #111111; /* Світлий фон */
+    padding: 1rem 0;          /* Внутрішні відступи зверху/знизу */
+    margin-top: auto;         /* Важливо у Flexbox, хоча flex-grow на main має бути достатньо */
+}
+
+/* Для зміни кольору тексту в футері */
+.footer .footer-color-text {
+    color: rgb(247, 247, 246);
+}
+
+/* для візуального виділення сум */
+.text-income {
+    color: #198754; /* Зелений Bootstrap success color */
+    font-weight: bold;
+  }
+  
+  .text-expense {
+    color: #dc3545; /* Червоний Bootstrap danger color */
+  }

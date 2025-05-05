@@ -1,0 +1,37 @@
+{% extends "budget/base.html" %}
+
+{% block title %}Імпорт нотаток - Сімейний бюджет{% endblock %}
+
+{% block content %}
+<h1>Імпорт нотаток з JSON</h1>
+
+<p class="text-muted">Ця функція дозволяє імпортувати текстові дані нотаток (дата, заголовок, зміст) з файлу JSON. Фотографії з файлу **не імпортуються**.</p>
+<p class="text-muted">Очікуваний формат файлу: список (масив) об'єктів, де кожен об'єкт представляє нотатку і містить ключі "date" (у форматі YYYY-MM-DD), "title", "content".</p>
+
+<form method="post" enctype="multipart/form-data" class="mt-4">
+    {% csrf_token %}
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
+            {% endif %}
+            <div class="mb-3">
+                 <label for="{{ form.json_file.id_for_label }}" class="form-label">{{ form.json_file.label }}</label>
+                 {{ form.json_file }}
+                 {% if form.json_file.help_text %}
+                     <div class="form-text">{{ form.json_file.help_text }}</div>
+                 {% endif %}
+                 {% if form.json_file.errors %}
+                     <div class="invalid-feedback d-block">
+                         {% for error in form.json_file.errors %}{{ error }}{% endfor %}
+                     </div>
+                 {% endif %}
+            </div>
+        </div>
+    </div>
+     <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Імпортувати нотатки</button>
+        <a href="{% url 'notes:note_list' %}" class="btn btn-secondary">Скасувати</a>
+    </div>
+</form>
+{% endblock %}

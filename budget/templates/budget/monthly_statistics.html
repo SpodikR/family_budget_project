@@ -1,0 +1,225 @@
+{% extends "budget/base.html" %}
+{% load static %}
+{% load l10n %} {# Завантажуємо теги локалізації для форматування чисел #}
+
+{% block title %}Статистика за {{ month_name }} - Сімейний бюджет{% endblock %}
+
+{% block content %}
+    <h1>Статистика за {{ month_name }}</h1>
+
+    {# Форма для вибору місяця #}
+    <form method="get" action="" class="mb-4">
+         <label for="month_select" class="form-label">Вибрати інший місяць:</label>
+         <select name="month_select" id="month_select" class="form-select w-auto d-inline-block">
+             {% for m in month_list %}
+                 {# Генеруємо URL для кожного місяця #}
+                 {% url 'budget:monthly_statistics' year=m.year month=m.month as month_url %}
+                 <option value="{{ month_url }}" {% if m.year == year and m.month == month %}selected{% endif %}>
+                     {{ m.name }}
+                 </option>
+             {% endfor %}
+         </select>
+         {# Невидиме поле submit або JS для відправки при зміні #}
+         <noscript><button type="submit" class="btn btn-sm btn-secondary ms-2">Перейти</button></noscript>
+    </form>
+
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Загальний дохід</h5>
+                    {# localize форматує число згідно локалі #}
+                    <p class="card-text fs-4">{{ total_income|floatformat:2|localize }} грн</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+             <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">Загальні витрати</h5>
+                    <p class="card-text fs-4">{{ total_expense|floatformat:2|localize }} грн</p>
+                </div>
+            </div>
+        </div>
+         <div class="col-md-4">
+             <div class="card {% if balance >= 0 %}bg-light{% else %}text-white bg-warning{% endif %}">
+                <div class="card-body">
+                    <h5 class="card-title">Баланс</h5>
+                    <p class="card-text fs-4 {% if balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
+                        {{ balance|floatformat:2|localize }} грн
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {# --- ДОДАНО БЛОК ДЛЯ ДІАГРАМИ --- #}
+    {% if has_expense_data %} {# Показуємо блок, тільки якщо є дані #}
+    <div class="row mb-4">
+        <div class="col-md-6 offset-md-3"> {# Центруємо діаграму #}
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    Розподіл витрат за категоріями
+                </div>
+                <div class="card-body">
+                    {# Місце для діаграми #}
+                    <canvas id="expenseCategoryChart" style="max-height: 400px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {# --- КІНЕЦЬ БЛОКУ ДІАГРАМИ --- #}
+
+    {# Замість старого row з двома колонками #}
+<div class="row justify-content-center mt-4"> {# Центруємо контент і додаємо відступ зверху #}
+    <div class="col-lg-10 col-xl-9"> {# Обмежуємо ширину на великих екранах для кращої читабельності #}
+
+        {# --- Блок Доходів --- #}
+        <div class="mb-4"> {# Відступ знизу #}
+            <h2 class="mb-3">Доходи за {{ month_name }}</h2> {# Додав відступ під заголовком #}
+            {% if incomes %}
+                <ul class="list-group shadow-sm"> {# Тінь для списку #}
+                    {% for income in incomes %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                {{ income.date|date:"d.m" }}: {{ income.source|default:"Дохід" }}
+                                {% if income.description %}<small class="d-block text-muted">{{ income.description }}</small>{% endif %}
+                            </div>
+                            <span class="badge bg-success rounded-pill">{{ income.amount|floatformat:2|localize }} грн</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="alert alert-light text-center" role="alert"> {# Стилізоване повідомлення #}
+                   За цей місяць немає записів про доходи.
+                </div>
+            {% endif %}
+        </div>
+        {# --- Кінець Блоку Доходів --- #}
+
+
+        {# --- Блок Витрат (йде одразу під доходами) --- #}
+        <div class="mb-4">
+             <h2 class="mb-3">Витрати за {{ month_name }}</h2>
+             {% if expenses %}
+                <ul class="list-group shadow-sm">
+                    {% for expense in expenses %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                {{ expense.date|date:"d.m" }}: {{ expense.category.name|default:"Без категорії" }}
+                                {% if expense.description %}<small class="d-block text-muted">{{ expense.description }}</small>{% endif %}
+                            </div>
+                            <div class="d-flex align-items-center"> {# Обгортка для чеку і суми #}
+                                {# Посилання на чек (якщо воно є і лайтбокс налаштований) #}
+                                {% if expense.receipt_image %}
+                                    <div class="checks-gallery me-2"> {# Відступ праворуч від чеку #}
+                                        <a href="{{ expense.receipt_image.url }}"
+                                           data-caption="Чек до витрати {{ expense.amount|floatformat:2 }} грн від {{ expense.date|date:'d.m.Y' }}"
+                                           class="btn btn-sm btn-outline-secondary py-0 px-1" {# Маленька кнопка #}
+                                           title="Переглянути чек">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-image" viewBox="0 0 16 16"><path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/></svg> {# Іконка картинки Bootstrap #}
+                                        </a>
+                                    </div>
+                                {% endif %}
+                                {# Сума витрати #}
+                                <span class="badge bg-danger rounded-pill">{{ expense.amount|floatformat:2|localize }} грн</span>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                 <div class="alert alert-light text-center" role="alert">
+                    За цей місяць немає записів про витрати.
+                </div>
+            {% endif %}
+        </div>
+         {# --- Кінець Блоку Витрат --- #}
+    </div> {# Кінець col-lg-10 #}
+</div> {# Кінець row #}
+{% endblock %}
+{% block extra_scripts %}
+    {# --- СКРИПТИ ДЛЯ ДІАГРАМИ (якщо є дані) --- #}
+    {% if has_expense_data %}
+        {# 1. Підключаємо Chart.js (CDN) #}
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        {# --- ВБУДОВУЄМО ДАНІ ЯК JSON У СКРИПТ-ТЕГИ --- #}
+        {{ chart_labels|json_script:"chart-labels-data" }}
+        {{ chart_data|json_script:"chart-data-data" }}
+        {# --- КІНЕЦЬ ВБУДОВУВАННЯ --- #}
+        {{ chart_colors|json_script:"chart-colors-data" }} {# <--- ДОДАЄМО ДАНІ КОЛЬОРІВ #}
+
+        {# 2. Скрипт для ініціалізації діаграми #}
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                try {
+                    const labelsElement = document.getElementById('chart-labels-data');
+                    const dataElement = document.getElementById('chart-data-data');
+                    const colorsElement = document.getElementById('chart-colors-data'); // <--- ОТРИМУЄМО ЕЛЕМЕНТ КОЛЬОРІВ
+
+                    if (!labelsElement || !dataElement || !colorsElement) {
+                        console.error("Не вдалося знайти елементи даних для діаграми (chart-labels-data або chart-data-data).");
+                        return;
+                    }
+
+                    const labelsJsonString = labelsElement.textContent;
+                    const dataJsonString = dataElement.textContent;
+                    console.log("Рядок JSON з textContent для labels:", labelsJsonString);
+                    console.log("Рядок JSON з textContent для data:", dataJsonString);
+
+                    // Подвійний парсинг
+                    const intermediateLabels = JSON.parse(labelsJsonString);
+                    const intermediateData = JSON.parse(dataJsonString);
+                    const intermediateColors = JSON.parse(colorsElement.textContent); // <--- ПАРСИМО КОЛЬОРИ (1)
+                    console.log("Результат першого парсингу labels:", intermediateLabels, typeof intermediateLabels);
+                    console.log("Результат першого парсингу data:", intermediateData, typeof intermediateData);
+
+                    const labels = JSON.parse(intermediateLabels);
+                    const data = JSON.parse(intermediateData);
+                    const backgroundColors = JSON.parse(intermediateColors); // <--- ПАРСИМО КОЛЬОРИ (2)
+                    console.log("Розпарсені labels (фінал):", labels);
+                    console.log("Тип labels (фінал):", typeof labels, ", Це масив?", Array.isArray(labels));
+                    console.log("Розпарсені data (фінал):", data);
+                    console.log("Тип data (фінал):", typeof data, ", Це масив?", Array.isArray(data));
+                    console.log("Розпарсені backgroundColors:", backgroundColors); // <--- ЛОГУЄМО КОЛЬОРИ
+
+                    if (!Array.isArray(labels) || !Array.isArray(data) || !Array.isArray(backgroundColors)) {
+                        console.error("Дані все ще не є масивами після подвійного парсингу!");
+                        return;
+                    }
+                    // Перевірка, що кількість кольорів відповідає даним
+                    if (backgroundColors.length !== data.length) {
+                        console.warn("Кількість кольорів не відповідає кількості даних. Можливі проблеми з відображенням.");
+                        // Можна додати логіку для генерації додаткових кольорів тут, якщо потрібно
+                    }
+
+                    const ctx = document.getElementById('expenseCategoryChart').getContext('2d');
+                    const expenseCategoryChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Витрати за категоріями',
+                                data: data,
+                                backgroundColor: backgroundColors, // <--- ВИКОРИСТОВУЄМО КОЛЬОРИ (1)
+                                borderColor: backgroundColors,
+                                borderWidth: 3
+                            }]
+                        },
+                        options: { /* ... опції ... */ }
+                    });
+                } catch (e) {
+                     console.error("Помилка під час ініціалізації діаграми:", e);
+                }
+            });
+        </script>
+        {# --- КІНЕЦЬ СКРИПТУ ДІАГРАМИ --- #}
+    {% endif %}
+
+    {# --- ПІДКЛЮЧЕННЯ СКРИПТУ ДЛЯ SELECT (ЗАВЖДИ) --- #}
+    <script src="{% static 'budget/js/statistics_select_redirect.js' %}"></script>
+    {# --- КІНЕЦЬ ПІДКЛЮЧЕННЯ --- #}
+
+{% endblock extra_scripts %}
+    

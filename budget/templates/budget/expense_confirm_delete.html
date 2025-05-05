@@ -1,0 +1,35 @@
+{% extends "budget/base.html" %}
+
+{% block title %}Підтвердити видалення витрати{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-danger mt-4"> {# Червона рамка для небезпеки #}
+                <div class="card-header bg-danger text-white">
+                    Підтвердження видалення
+                </div>
+                <div class="card-body">
+                    <p class="fs-5">Ви впевнені, що хочете остаточно видалити цю витрату?</p>
+                    <ul class="list-unstyled">
+                        <li><strong>Дата:</strong> {{ object.date|date:"d.m.Y" }}</li>
+                        <li><strong>Категорія:</strong> {{ object.category.name|default:"Без категорії" }}</li>
+                        <li><strong>Сума:</strong> {{ object.amount }} грн</li>
+                        {% if object.description %}
+                            <li><strong>Опис:</strong> {{ object.description }}</li>
+                        {% endif %}
+                    </ul>
+                     <p class="text-danger fw-bold"><small>Ця дія є незворотною!</small></p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Так, видалити витрату</button>
+                        {# Посилання "Скасувати" може вести на сторінку, з якої прийшли, або на список #}
+                        <a href="{{ request.META.HTTP_REFERER|default:request.build_absolute_uri }}" class="btn btn-secondary">Ні, скасувати</a>
+                        {# Або простіше: <a href="{% url 'budget:cash_flow' %}" class="btn btn-secondary">Ні, скасувати</a> #}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

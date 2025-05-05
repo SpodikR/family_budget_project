@@ -1,0 +1,94 @@
+{% extends "budget/base.html" %}
+{% load l10n %}
+{% load static %}
+
+{% block title %}Потік грошей - Сімейний бюджет{% endblock %}
+
+{% block content %}
+<h1>Потік грошей / Журнал операцій</h1>
+
+<div class="table-responsive mt-4">
+    <table class="table table-striped table-hover table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Дата</th>
+                <th scope="col">Тип</th>
+                <th scope="col">Категорія/Джерело</th>
+                <th scope="col">Опис</th>
+                <th scope="col" class="text-end">Сума</th>
+                <th scope="col" class="text-end">Баланс після</th>
+                <th scope="col" class="text-center">Дії</th> {# <-- Змінив назву останнього стовпця #}
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+            <tr>
+                <td>{{ transaction.date|date:"d.m.Y" }}</td>
+                <td> {# Залишаємо тут тільки тип #}
+                    {% if transaction.type == 'income' %}
+                        <span class="badge bg-success">Дохід</span>
+                        {# --- ПРИБИРАЄМО КНОПКИ ЗВІДСИ --- #}
+                    {% elif transaction.type == 'expense' %}
+                        <span class="badge bg-danger">Витрата</span>
+                         {# --- ПРИБИРАЄМО КНОПКИ ЗВІДСИ --- #}
+                    {% endif %}
+                </td>
+                <td>
+                     {% if transaction.type == 'income' %}
+                        {{ transaction.description|truncatechars:30 }}
+                     {% else %}
+                        {{ transaction.category }}
+                     {% endif %}
+                </td>
+                 <td>
+                     {% if transaction.type == 'income' %}
+                     {% else %}
+                         {{ transaction.description|truncatechars:50 }}
+                     {% endif %}
+                 </td>
+                <td class="text-end {% if transaction.amount > 0 %}text-income{% else %}text-expense{% endif %}">
+                    {% if transaction.type == 'income' %}
+                        +{{ transaction.display_amount|floatformat:2|localize }}
+                    {% else %}
+                        {{ transaction.display_amount|floatformat:2|localize }}
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    {{ transaction.balance_after|floatformat:2|localize }} грн
+                </td>
+                {# --- ОНОВЛЕНИЙ СТОВПЕЦЬ "ДІЇ" --- #}
+                <td class="text-center">
+                    {# Кнопки Редагувати/Видалити #}
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Transaction Actions"> {# Групуємо кнопки #}
+                        {% if transaction.type == 'income' %}
+                            <a href="{% url 'budget:edit_income' transaction.pk %}" class="btn btn-outline-primary" title="Редагувати дохід">Редагувати</a>
+                            <a href="{% url 'budget:delete_income' transaction.pk %}" class="btn btn-outline-danger" title="Видалити дохід">Видалити</a> {# Розкоментуй, коли буде view #}
+                        {% elif transaction.type == 'expense' %}
+                             <a href="{% url 'budget:edit_expense' transaction.pk %}" class="btn btn-outline-primary" title="Редагувати витрату">Редагувати</a>
+                             <a href="{% url 'budget:delete_expense' transaction.pk %}" class="btn btn-outline-danger" title="Видалити витрату">Видалити</a> {# Розкоментуй, коли буде view #}
+                        {% endif %}
+                    </div>
+
+                    {# Кнопка/Посилання на чек (якщо це витрата і є чек) #}
+                    {% if transaction.type == 'expense' and transaction.receipt_image_url %}
+                        <div class="checks-gallery d-inline-block ms-1"> {# ms-1 для невеликого відступу #}
+                            <a href="{{ transaction.receipt_image_url }}"
+                               data-caption="Чек до витрати {{ transaction.display_amount|floatformat:2 }} грн від {{ transaction.date|date:'d.m.Y' }}"
+                               class="btn btn-sm btn-outline-secondary py-0 px-1" {# Маленька кнопка-іконка #}
+                               title="Переглянути чек">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-image" viewBox="0 0 16 16"><path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/></svg>
+                            </a>
+                        </div>
+                    {% endif %}
+                </td>
+                 {# --- КІНЕЦЬ СТОВПЦЯ "ДІЇ" --- #}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center">Записів про доходи чи витрати ще немає.</td> {# Colspan залишається 7 #}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

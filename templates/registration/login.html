@@ -1,0 +1,83 @@
+{# templates/registration/login.html #}
+{% extends "budget/base.html" %} {# Переконайся, що шлях до базового шаблону правильний #}
+
+{% block body_class %}auth-page{% endblock body_class %} {# Опціональний клас для < body > #}
+
+{% block title %}Вхід - Сімейний бюджет{% endblock %}
+
+{% block content %}
+<div class="container mt-5"> {# Додаємо відступ зверху #}
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-5"> {# Трохи вужча колонка #}
+            <div class="card shadow-sm border-0"> {# Прибираємо рамку, залишаємо тінь #}
+                <div class="card-body p-4 p-md-5"> {# Більше внутрішніх відступів #}
+                    <h2 class="text-center mb-4">Вхід до системи</h2>
+
+                    {# Повідомлення про помилку логіну/паролю #}
+                    {% if form.errors and not form.non_field_errors %} {# Показуємо, тільки якщо НЕмає non_field_errors (які ми обробимо нижче), але є інші помилки поля (малоймовірно для логіну) #}
+                        <div class="alert alert-danger" role="alert">
+                            Будь ласка, виправте помилки нижче.
+                        </div>
+                    {% endif %}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            Невірне ім'я користувача або пароль. Будь ласка, спробуйте знову.
+                        </div>
+                    {% endif %}
+
+                    {# Повідомлення, якщо користувача перенаправлено сюди #}
+                    {% if next and not user.is_authenticated %}
+                       <div class="alert alert-info small" role="alert">
+                           Будь ласка, увійдіть, щоб отримати доступ до сторінки "{{ next }}".
+                       </div>
+                    {% endif %}
+
+
+                    <form method="post" action="{% url 'accounts:login' %}">
+                        {% csrf_token %}
+
+                        {# Поле Ім'я користувача #}
+                        <div class="mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label|default:"Ім'я користувача" }}</label>
+                            <input type="text"
+                                   name="{{ form.username.name }}"
+                                   id="{{ form.username.id_for_label }}"
+                                   class="form-control" {# Клас Bootstrap #}
+                                   required
+                                   placeholder="Введіть ім'я користувача">
+                            {# Тут зазвичай не буває помилок поля, основна помилка - non_field_error #}
+                        </div>
+
+                        {# Поле Пароль #}
+                        <div class="mb-4"> {# Збільшив відступ знизу #}
+                            <label for="{{ form.password.id_for_label }}" class="form-label">{{ form.password.label|default:"Пароль" }}</label>
+                            <input type="password"
+                                   name="{{ form.password.name }}"
+                                   id="{{ form.password.id_for_label }}"
+                                   class="form-control" {# Клас Bootstrap #}
+                                   required
+                                   placeholder="Введіть пароль">
+                             {# Тут теж зазвичай немає помилок поля #}
+                        </div>
+
+                        {# Приховане поле для перенаправлення #}
+                        <input type="hidden" name="next" value="{{ next|default:'' }}">
+
+                        <div class="d-grid"> {# Для кнопки на всю ширину #}
+                             <button type="submit" class="btn btn-primary btn-lg">Увійти</button>
+                        </div>
+
+                    </form>
+
+                     {# Посилання під формою #}
+                     <div class="text-center mt-4">
+                        {# <p><a href="{% url 'accounts:password_reset' %}">Забули пароль?</a></p> #}
+                        <p>Не маєте акаунту? <a href="{% url 'accounts:register' %}">Зареєструватися</a></p>
+                     </div>
+
+                </div> {# кінець card-body #}
+            </div> {# кінець card #}
+        </div> {# кінець col #}
+    </div> {# кінець row #}
+</div> {# кінець container #}
+{% endblock %}

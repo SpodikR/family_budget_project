@@ -1,0 +1,34 @@
+{% extends "budget/base.html" %}
+
+{% block title %}Підтвердити видалення доходу{% endblock %}
+
+{% block content %}
+ <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-danger mt-4">
+                <div class="card-header bg-danger text-white">
+                    Підтвердження видалення
+                </div>
+                <div class="card-body">
+                    <p class="fs-5">Ви впевнені, що хочете остаточно видалити цей дохід?</p>
+                     <ul class="list-unstyled">
+                        <li><strong>Дата:</strong> {{ object.date|date:"d.m.Y" }}</li>
+                        <li><strong>Джерело:</strong> {{ object.source|default:"N/A" }}</li>
+                        <li><strong>Сума:</strong> {{ object.amount }} грн</li>
+                         {% if object.description %}
+                            <li><strong>Опис:</strong> {{ object.description }}</li>
+                        {% endif %}
+                    </ul>
+                     <p class="text-danger fw-bold"><small>Ця дія є незворотною!</small></p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Так, видалити дохід</button>
+                        <a href="{{ request.META.HTTP_REFERER|default:request.build_absolute_uri }}" class="btn btn-secondary">Ні, скасувати</a>
+                        {# <a href="{% url 'budget:cash_flow' %}" class="btn btn-secondary">Ні, скасувати</a> #}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

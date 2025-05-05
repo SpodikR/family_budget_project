@@ -1,0 +1,27 @@
+{% extends "budget/base.html" %}
+
+{% block title %}
+    {% if is_editing %}Редагувати дохід{% else %}Додати дохід{% endif %} - Сімейний бюджет
+{% endblock %}
+
+{% block content %}
+    <h1>{% if is_editing %}Редагувати дохід{% else %}Додати новий дохід{% endif %}</h1>
+
+    {% if object %}
+        <p class="text-muted">Редагування запису від {{ object.date|date:"d.m.Y" }} на суму {{ object.amount }} грн.</p>
+    {% endif %}
+
+    <form method="post"> {# enctype тут не потрібен #}
+        {% csrf_token %}
+        {{ form.as_p }} {# Або ручний рендерінг чи crispy_forms #}
+        <button type="submit" class="btn btn-primary">
+             {% if is_editing %}Зберегти зміни{% else %}Зберегти дохід{% endif %}
+        </button>
+         {% if is_editing %}
+            <a href="{% url 'budget:cash_flow' %}" class="btn btn-secondary">Скасувати</a>
+            <a href="{% url 'budget:delete_income' object.pk %}" class="btn btn-outline-danger ms-2">Видалити</a>
+        {% else %}
+             <a href="{% url 'budget:dashboard' %}" class="btn btn-secondary">Скасувати</a>
+        {% endif %}
+    </form>
+{% endblock %}

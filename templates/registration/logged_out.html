@@ -1,0 +1,11 @@
+{# templates/registration/logged_out.html #}
+{% extends "budget/base.html" %}
+
+{% block title %}Вихід - Сімейний бюджет{% endblock %}
+
+{% block content %}
+  <h2>Ви вийшли з системи</h2>
+  <p>Дякуємо за використання нашого сервісу!</p>
+  <p><a href="{% url 'accounts:login' %}" class="btn btn-primary">Увійти знову</a></p>
+  <p><a href="{% url 'budget:dashboard' %}" class="btn btn-secondary">Перейти на головну (як гість)</a></p>
+{% endblock %}

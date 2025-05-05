@@ -1,0 +1,9 @@
+@echo off
+echo Активація віртуального середовища...
+call venv\Scripts\activate
+
+echo Запуск сервера Django...
+python manage.py runserver
+
+echo Сервер зупинено. Натисніть будь-яку клавішу для виходу...
+pause > nul
