@@ -1,0 +1,106 @@
+{# budget/templates/budget/expense_add_form.html #}
+{% extends "budget/base.html" %}
+{% load static %} {# Якщо потрібні статичні файли всередині #}
+
+{% block title %}Додати Витрати - Сімейний бюджет{% endblock %}
+
+{% block content %}
+<h1>Додати Витрати</h1>
+<p class="text-muted">Вкажіть спільну дату та категорію, а потім заповніть один або кілька рядків з сумами та описами витрат.</p>
+
+{# Обов'язково enctype для завантаження файлів (чеків) #}
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    {# --- Форма для спільних даних (Дата + Категорія) --- #}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">Спільні дані</h5>
+        </div>
+        <div class="card-body">
+            {# Відображення помилок для спільних даних #}
+            {% if common_data_form.non_field_errors %}
+                <div class="alert alert-danger p-2 small">{{ common_data_form.non_field_errors|striptags }}</div>
+            {% endif %}
+            <div class="row">
+                {# Поле Дата #}
+                <div class="col-md-6 mb-3 mb-md-0"> {# Забираємо нижній відступ на моб. #}
+                    <label for="{{ common_data_form.date.id_for_label }}" class="form-label">{{ common_data_form.date.label }}</label>
+                    {{ common_data_form.date }}
+                     {% if common_data_form.date.errors %}
+                         <div class="invalid-feedback d-block">{{ common_data_form.date.errors|striptags }}</div>
+                     {% endif %}
+                </div>
+                 {# Поле Категорія #}
+                 <div class="col-md-6">
+                    <label for="{{ common_data_form.category.id_for_label }}" class="form-label">{{ common_data_form.category.label }}</label>
+                    {{ common_data_form.category }}
+                     {% if common_data_form.category.errors %}
+                         <div class="invalid-feedback d-block">{{ common_data_form.category.errors|striptags }}</div>
+                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {# --- Кінець форми для спільних даних --- #}
+
+
+    {# --- Формсет для рядків витрат --- #}
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">Рядки витрат (заповніть потрібні)</h5>
+        </div>
+        <div class="card-body">
+            {# Управляюча форма формсету - ОБОВ'ЯЗКОВО #}
+            {{ formset.management_form }}
+
+            {# Помилки, що не стосуються конкретних полів формсету #}
+            {% if formset.non_form_errors %}
+                <div class="alert alert-danger p-2 small">
+                    {% for error in formset.non_form_errors %}{{ error|escape }}{% endfor %}
+                </div>
+            {% endif %}
+
+            {# Ітеруємо по формах у формсеті #}
+            {% for form in formset %}
+                <div class="expense-form-row border-bottom mb-3 pb-3">
+                     {# Помилки конкретної форми #}
+                     {% if form.errors %}
+                        <div class="alert alert-warning small p-2 mb-2">
+                           <strong>Помилка в рядку:</strong><br>
+                           {% for field, errors in form.errors.items %}
+                                {% for error in errors %}<span>{{ field.label|default:field.name|title }}: {{ error|striptags }}</span><br>{% endfor %}
+                           {% endfor %}
+                        </div>
+                     {% endif %}
+
+                    {# Поля форми в рядку Bootstrap #}
+                    <div class="row g-2 align-items-center"> {# align-items-center для вертикального вирівнювання #}
+                        <div class="col-sm-3"> {# Сума #}
+                            {{ form.amount }} {# Клас form-control додається у forms.py #}
+                        </div>
+                        <div class="col-sm-5"> {# Опис #}
+                             {{ form.description }}
+                        </div>
+                         <div class="col-sm-4"> {# Чек #}
+                             {{ form.receipt_image }}
+                        </div>
+                        {# Приховані поля форми #}
+                         {% for hidden_field in form.hidden_fields %}
+                           {{ hidden_field }}
+                         {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {# --- Кінець формсету --- #}
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-success btn-lg">Зберегти додані витрати</button> {# Велика зелена кнопка #}
+        <a href="{% url 'budget:dashboard' %}" class="btn btn-secondary">Скасувати</a>
+    </div>
+
+</form>
+
+{% endblock %}

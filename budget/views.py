@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect # render - для відображення шаблонів, redirect - для перенаправлення
 from django.http import HttpResponse # Базовий HTTP-відповідь (для тестів)
 from .models import Income, Expense, Category
-from .forms import IncomeForm, ExpenseForm
+from .forms import IncomeForm, ExpenseForm, CommonExpenseDataForm, ExpenseLineFormSet
 from django.utils import timezone
 from django.db.models import Sum, F # Для агрегації (підсумовування),F для роботи з полями
 from datetime import datetime # Для роботи з датами
@@ -21,6 +21,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.core.exceptions import PermissionDenied # Для перевірки прав
 from django.contrib import messages # Для повідомлень користувачу
+from django.db import transaction # Для транзакцій (якщо потрібно)
 
 # Головна сторінка / Дашборд
 def dashboard(request):
@@ -68,25 +69,83 @@ def add_income(request):
     }
     return render(request, 'budget/income_form.html', context)
 
-def add_expense(request):
-    if request.method == 'POST':
-        form = ExpenseForm(request.POST, request.FILES)
-        if form.is_valid():
-            expense_entry = form.save(commit=False)
-            if request.user.is_authenticated:
-                expense_entry.user = request.user
-            expense_entry.save()
-            # Якщо використовували ModelForm.save_m2m(), його треба викликати після save()
-            # form.save_m2m() # У нашому випадку це не потрібно
-            return redirect('budget:dashboard')
-    else:
-        form = ExpenseForm()
+# --- УНІВЕРСАЛЬНА VIEW ДЛЯ ДОДАВАННЯ ВИТРАТ ЧЕРЕЗ ФОРМСЕТ ---
+@login_required
+def add_expense(request): # Використовуємо цю назву для URL /expense/add/
+    """Додавання однієї або кількох витрат за одну дату та категорію."""
+    template_name = 'budget/expense_add_form.html' # Наш новий шаблон
 
+    # Ініціалізуємо форми для GET запиту або при помилці POST
+    # queryset=Expense.objects.none() - важливо для створення НОВИХ об'єктів
+    formset = ExpenseLineFormSet(request.POST or None, request.FILES or None, queryset=Expense.objects.none(), prefix='expenses')
+    common_data_form = CommonExpenseDataForm(request.POST or None)
+
+    if request.method == 'POST':
+        print("Обробка POST запиту...") # Лог
+        # Перевіряємо валідність обох: форми спільних даних та формсету
+        if common_data_form.is_valid() and formset.is_valid():
+            print("Обидві форми валідні.") # Лог
+            common_date = common_data_form.cleaned_data['date']
+            common_category = common_data_form.cleaned_data['category']
+            print(f"Спільна дата: {common_date}, Спільна категорія: {common_category.name}") # Лог
+
+            # Використовуємо транзакцію, щоб гарантувати цілісність даних
+            try:
+                with transaction.atomic():
+                    saved_count = 0
+                    # Ітеруємо по формах у формсеті
+                    for form in formset:
+                        # cleaned_data існує тільки якщо форма валідна
+                        # Перевіряємо, чи є сума - індикатор того, що рядок заповнено
+                        if form.cleaned_data.get('amount'):
+                            print(f"Обробка заповненої форми: {form.cleaned_data}") # Лог
+                            # Створюємо об'єкт, але не зберігаємо одразу
+                            expense = form.save(commit=False)
+                            # Призначаємо спільні дані та користувача
+                            expense.user = request.user
+                            expense.date = common_date
+                            expense.category = common_category
+                            # Зберігаємо одну витрату
+                            expense.save()
+                            saved_count += 1
+                        # Порожні форми ігноруються автоматично завдяки is_valid() та перевірці amount
+
+                    if saved_count > 0:
+                        messages.success(request, f"Успішно додано {saved_count} витрат(у) в категорію '{common_category.name}' за {common_date.strftime('%d.%m.%Y')}.")
+                        print(f"Успішно збережено {saved_count} витрат.") # Лог
+                    else:
+                        messages.warning(request, "Не було додано жодної витрати (можливо, рядки були порожні або невалідні?).")
+                        print("Не знайдено валідних рядків для збереження.") # Лог
+
+                    # Перенаправляємо після успішного збереження
+                    return redirect('budget:dashboard') # Або 'budget:add_expense' для повторного додавання
+
+            except Exception as e:
+                # Обробка можливих помилок під час збереження
+                 print(f"Помилка під час транзакції збереження: {e}") # Лог
+                 messages.error(request, f"Виникла помилка під час збереження даних: {e}")
+
+        else: # Якщо одна з форм або формсет не валідні
+            print("Форма спільних даних валідна:", common_data_form.is_valid()) # Лог
+            print("Помилки форми спільних даних:", common_data_form.errors) # Лог
+            print("Формсет валідний:", formset.is_valid()) # Лог
+            # Виведемо помилки формсету більш детально
+            if not formset.is_valid():
+                 print("Загальні помилки формсету:", formset.non_form_errors())
+                 for i, form_errors in enumerate(formset.errors):
+                     if form_errors:
+                         print(f"Помилки у формі #{i}:", form_errors)
+            messages.error(request, "Будь ласка, виправте помилки, відмічені у формі.")
+
+    # Для GET запиту або якщо POST був невалідним, рендеримо шаблон з формами
     context = {
-        'form': form,
-        'is_guest': not request.user.is_authenticated,
+        'formset': formset,
+        'common_data_form': common_data_form,
     }
-    return render(request, 'budget/expense_form.html', context)
+    print("Рендеринг шаблону...") # Лог
+    return render(request, template_name, context)
+
+# --- КІНЕЦЬ УНІВЕРСАЛЬНОЇ VIEW ---
 
 # --- VIEW ДЛЯ РЕДАГУВАННЯ ВИТРАТИ ---
 @login_required
