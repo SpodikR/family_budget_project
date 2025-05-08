@@ -2,6 +2,7 @@
 from django import forms
 from django.forms import modelformset_factory # <--- Додаємо імпорт
 from .models import Income, Expense, Category
+from django.utils import timezone
 
 # --- ФОРМА ДОХОДІВ (залишається як є) ---
 class IncomeForm(forms.ModelForm):
@@ -70,7 +71,8 @@ class CommonExpenseDataForm(forms.Form):
     date = forms.DateField(
         label="Спільна дата*", # Додав * для позначення обов'язковості
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        required=True
+        required=True,
+        initial=timezone.now # <--- ДОДАНО ЦЕЙ ПАРАМЕТР
     )
     category = forms.ModelChoiceField(
         queryset=Category.objects.all().order_by('name'),
